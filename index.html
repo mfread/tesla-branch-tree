@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Tesla Branch Tree v0.09 beta by Mark Read</title>
+  <title>Tesla Branch Tree v0.09 beta</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     :root {
@@ -281,7 +281,7 @@
     <button class="btn secondary small" id="toggle-sidebar" title="Hide panel">‹</button>
     <div class="brand">
       <h1>Tesla Branch Tree</h1>
-      <span class="app-ver">v0.09 beta by Mark Read</span>
+      <span class="app-ver">v0.09 beta</span>
     </div>
     <div class="view-toggle">
       <button class="btn small active" id="view-tree">Tree</button>
@@ -442,7 +442,7 @@
 
   <script>
     const APP_VERSION = "0.09 beta";
-    const DATA_SNAPSHOT = "2026-08-27";
+    const DATA_SNAPSHOT = "2026-08-30";
 
     const META = {
       "2026.14": { first: "2026-04-15", fleet: "small leftover", fsd: "none on trunk", regions: "Global", hw: "HW3 + HW4", note: "Spring Update feature trunk. FSD point releases hang off 2026.14.6.x, not this parent." },
@@ -464,14 +464,14 @@
       "2026.20.10": { first: "2026-07-28", fleet: "1.7%", fsd: "HW4 v14.3.5 Down Under", regions: "Australia / New Zealand", hw: "HW4", note: "AU/NZ HW4 FSD v14.3.5. Same driving stack as US+CA 2026.20.6.6. Not Lite; Lite is the HW3 distill." },
       "2026.20.7.5": { first: "2026-08-06", fleet: "0.4%", fsd: "HW3 v14 Lite", regions: "South Korea", hw: "HW3", note: "Korea HW3 Lite early-access wave. Not US/AU/NZ in Teslascope sample." },
       "2026.21.5": { first: "2026-08-01", fleet: "<0.1%", fsd: "HW4 v14.3.7", regions: "United States", hw: "HW4", note: "US HW4 seed before 2026.21.6 dual-stack." },
-      "2026.21.6": { first: "2026-08-09", fleet: "25.1%", fsd: "HW3 v14.1 Lite + HW4 v14.3.7", regions: "North America", hw: "HW3 + HW4", note: "Current US+CA FSD dual-stack. Teslascope: US 93% / CA 6%. AU/NZ not in this sample — do not treat as Down Under Lite." },
+      "2026.21.6": { first: "2026-08-09", fleet: "~6% FSD share (dropping)", fsd: "HW3 v14.1 Lite + HW4 v14.3.7", regions: "US+CA", hw: "HW3 + HW4", note: "Previous US+CA FSD dual-stack. Cars are hopping to 2026.26.6.5. Teslascope sample is US+CA. AU/NZ not in this sample — do not treat as Down Under Lite." },
       "2026.21.300": { first: "2026-08-10", fleet: "~1%", fsd: "FSD Supervised (factory/EU HW4)", regions: "NL / BE / DK", hw: "HW4", note: "European HW4 factory-style FSD enablement. Not a US/AU build." },
       "2026.26": { first: "2026-07-26", fleet: "<0.1%", fsd: "none on trunk", regions: "US/CA/GB/EU seed", hw: "HW3 + HW4", note: "Summer Update seed. Feature payload lands on 2026.26.1+." },
       "2026.26.1": { first: "2026-07-28", fleet: "2.9% phasing out", fsd: "none bundled as a new FSD drop", regions: "Global incl. AU 1.62%", hw: "HW3 + HW4", note: "Summer feature wave (Grok, navigation, traction modes). NZ not listed on Teslascope. FSD merge is later on 2026.26.6.5 (US+CA)." },
       "2026.26.6": { first: "2026-08-11", fleet: "<0.1%", fsd: "none", regions: "Global incl. AU 2.63%", hw: "HW3 + HW4", note: "Short-lived Summer point before 2026.26.6.1." },
-      "2026.26.6.1": { first: "2026-08-14", fleet: "44.4% rolling out", fsd: "none new — production Summer", regions: "Global incl. AU 1.10% (NZ not listed)", hw: "HW3 + HW4", note: "Dominant Summer production build. Teslascope: US 46% / GB 10% / CA 3% / AU 1%. US+CA FSD merge is 2026.26.6.5, not this number." },
+      "2026.26.6.1": { first: "2026-08-14", fleet: "production Summer (HW3 ~75% of sample)", fsd: "none new — production Summer", regions: "Global incl. AU ~1% (NZ not listed)", hw: "HW3 + HW4", note: "Dominant non-FSD Summer production build. Teslascope still lists AU installs. US+CA FSD merge is 2026.26.6.5, not this number." },
       "2026.26.6.2": { first: "2026-08-22", fleet: "4.3% rolling out", fsd: "none", regions: "Mostly EU + some US/GB (small sample)", hw: "HW4 + some HW3", note: "Minor-fix wave after .6.1. Teslascope sample is Europe-heavy; AU/NZ/CA not listed." },
-      "2026.26.6.5": { first: "2026-08-26", fleet: "<0.1%", fsd: "HW3 v14.1 Lite + HW4 v14.3.8", regions: "North America", hw: "HW3 + HW4", note: "First Summer + latest US+CA FSD merge. Teslascope: US/CA only so far. AU/NZ twin not published on this number yet." },
+      "2026.26.6.5": { first: "2026-08-26", fleet: "rolling out (~12% of Teslascope in 5 days)", fsd: "HW3 v14.1 Lite + HW4 v14.3.8", regions: "US+CA (MX tiny)", hw: "HW3 + HW4", note: "Summer + latest US+CA FSD merge. Teslascope 30 Aug: US ~93% / CA ~6% / MX ~1%. HW split ~77% HW4 / ~23% HW3. HW3 gets v14.1 Lite, not v14.3.8. AU/NZ not in this sample." },
       "2026.27.100.1": { first: "2026-08-24", fleet: "0.6%", fsd: "FSD Supervised on HW4 (EU factory)", regions: "NL / BE / DK", hw: "HW4", note: "Factory / new-delivery EU branch, not a customer AU/US OTA target." }
     };
 
@@ -503,7 +503,7 @@
       "2026.26.6": ["US","CA","GB","AU"],
       "2026.26.6.1": ["US","CA","GB","AU"],
       "2026.26.6.2": ["US","GB"],
-      "2026.26.6.5": ["US","CA"],
+      "2026.26.6.5": ["US","CA","MX"],
       "2026.27.100.1": ["NL","BE","DK"]
     };
 
@@ -586,8 +586,8 @@
       "2026.20.6.9|3": { next: "2026.26.6.1", why: "AU/NZ HW3 cars on the 2026.20 regional build are most often jumping to the Summer production line." },
       "2026.20.6.1|3": { next: "2026.21.6 or 2026.26.6.1", why: "FSD subscribers often go 2026.21.6; others merge onto Summer 2026.26.6.1." },
       "2026.20.6.11|3": { next: "2026.21.6", why: "Observed US+CA HW3 hop from Lite dual-stack into 2026.21.6." },
-      "2026.21.6|3": { next: "2026.26.6.5 (later merge)", why: "FSD branch is being merged into Summer; HW3 may wait for a Lite-capable 2026.26 point release." },
-      "2026.21.6|4": { next: "2026.26.6.5", why: "HW4 cars are already moving from 2026.21.6 onto 2026.26.6.5 with FSD v14.3.8." },
+      "2026.21.6|3": { next: "2026.26.6.5", why: "Observed US+CA hop: 2026.21.6 → 2026.26.6.5 with HW3 v14.1 Lite still on that firmware." },
+      "2026.21.6|4": { next: "2026.26.6.5", why: "Observed US+CA hop: 2026.21.6 → 2026.26.6.5 with FSD v14.3.8." },
       "2026.26.6.1|3": { next: "2026.26.6.2", why: "On the main production line; next is the current point-fix wave." },
       "2026.26.6.1|4": { next: "2026.26.6.2 / .6.5", why: "HW4 may skip to the FSD-merged .6.5." }
     };
