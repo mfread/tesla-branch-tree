@@ -4,5 +4,1463 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Tesla Branch Tree v0.09 beta by Mark Read</title>
-  <!-- RESTORED CONTENT - see next attempt -->
-</head><body>ERROR - incomplete restore</body></html>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #1a1d24;
+      --border: #2a2f3a;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #3b82f6;
+      --accent2: #8b5cf6;
+      --highlight: #22c55e;
+      --path: #f59e0b;
+      --grey: #4b5563;
+      --card: #161a22;
+    }
+    [data-theme="light"] {
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent2: #7c3aed;
+      --highlight: #16a34a;
+      --path: #d97706;
+      --grey: #94a3b8;
+      --card: #f8fafc;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      z-index: 20;
+    }
+    .brand { display: flex; flex-direction: column; line-height: 1.15; }
+    header h1 { font-size: 1.12rem; font-weight: 600; white-space: nowrap; }
+    .app-ver { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.02em; }
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { filter: brightness(1.1); }
+    .btn.secondary { background: var(--border); color: var(--text); }
+    .btn.small { padding: 4px 8px; font-size: 0.8rem; }
+    .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .view-toggle button { border: none; border-radius: 0; background: var(--bg); color: var(--text); }
+    .view-toggle button.active { background: var(--accent); color: #fff; }
+    #table-wrap { flex: 1; display: none; flex-direction: column; overflow: hidden; background: var(--bg); }
+    #table-wrap.visible { display: flex; }
+    #tree-container.hidden { display: none; }
+    .table-toolbar { padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
+    .table-toolbar .filter-row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+    .table-toolbar label { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .table-toolbar select, .table-toolbar input { width: auto; margin: 0; min-width: 90px; }
+    table.versions th .sort { margin-left: 6px; font-size: 0.7rem; color: var(--muted); }
+    table.versions th.active-sort .sort { color: var(--accent); }
+    .table-scroll { flex: 1; overflow: auto; }
+    table.versions { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    table.versions th { position: sticky; top: 0; background: var(--panel); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap; z-index: 2; }
+    table.versions th:hover { color: var(--accent); }
+    table.versions td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    table.versions tr { cursor: pointer; }
+    table.versions tr:hover td { background: rgba(59,130,246,0.08); }
+    table.versions tr.current td { background: rgba(34,197,94,0.12); }
+    table.versions tr.history td { background: rgba(245,158,11,0.08); }
+    table.versions tr.greyed td { opacity: 0.45; }
+    .pill { display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; margin-right: 4px; }
+    .pill.now { background: #22c55e; color: #052e16; }
+    .pill.hist { background: #f59e0b; color: #1c1002; }
+    .hw-mini { font-size: 0.68rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; border: 1px solid #9aa0a6; background: #0a0a0a; margin-right: 3px; }
+    .hw-mini.hw3 { color: #f97316; }
+    .hw-mini.hw4 { color: #2563eb; }
+    .spacer { flex: 1; }
+    main { flex: 1; display: flex; overflow: hidden; position: relative; }
+    #sidebar {
+      width: 320px;
+      min-width: 280px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      z-index: 10;
+    }
+    #sidebar.collapsed { display: none; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .card h3 {
+      font-size: 0.78rem;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    label.field { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 2px; }
+    input[type="text"], input[type="search"], select, textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 5px;
+      padding: 6px 8px;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+    textarea { resize: vertical; min-height: 56px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.82rem; }
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      flex-shrink: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--text);
+      margin: 6px 0;
+      cursor: pointer;
+      line-height: 1.3;
+    }
+    .check-row span { flex: 1; }
+    .car-list { display: flex; flex-direction: column; gap: 6px; }
+    .car-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .car-item.active { border-color: var(--accent); background: rgba(59,130,246,0.15); }
+    .car-item .name { flex: 1; font-size: 0.9rem; }
+    .hist-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+    .hist-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 4px 6px;
+    }
+    .hist-item .grip { cursor: grab; color: var(--muted); font-size: 0.9rem; user-select: none; }
+    .hist-item input { margin: 0; flex: 1; }
+    .hist-item .rm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0 4px; }
+    .pred { font-size: 0.82rem; color: var(--text); background: var(--bg); border: 1px dashed var(--border); border-radius: 6px; padding: 8px; margin-top: 6px; }
+    .pred strong { color: var(--path); }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 0.75rem; color: var(--muted); }
+    .legend i {
+      display: inline-block;
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    #tree-container { flex: 1; position: relative; overflow: hidden; background: var(--bg); }
+    #tree-svg { width: 100%; height: 100%; cursor: grab; }
+    #tree-svg:active { cursor: grabbing; }
+    .node circle { stroke-width: 2px; cursor: pointer; }
+    .node text.lbl { font-size: 11px; fill: var(--text); pointer-events: none; }
+    .node text.hw-tag { font-size: 8px; font-weight: 700; pointer-events: none; }
+    .node text.hw-tag.hw3 { fill: #f97316; }
+    .node text.hw-tag.hw4 { fill: #2563eb; }
+    .node .badge { font-size: 8px; fill: var(--path); font-weight: 700; }
+    .link { fill: none; stroke: var(--border); stroke-width: 1.5px; }
+    .link.path-link { stroke: var(--path); stroke-width: 3px; }
+    .node.greyed circle { fill: var(--grey) !important; opacity: 0.35; }
+    .node.greyed text { opacity: 0.35; }
+    .node.greyed rect { opacity: 0.35; }
+    .node.current circle { stroke: var(--highlight); stroke-width: 3px; }
+    .node.history circle { stroke: var(--path); stroke-width: 2.5px; }
+    .tooltip {
+      position: absolute;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      pointer-events: none;
+      z-index: 30;
+      max-width: 280px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      display: none;
+    }
+    #details-panel {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      width: 300px;
+      max-height: 72vh;
+      overflow-y: auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      z-index: 25;
+      display: none;
+    }
+    #details-panel h3 { margin-bottom: 6px; font-size: 1rem; }
+    #details-panel .close { float: right; cursor: pointer; color: var(--muted); }
+    #details-panel dl { font-size: 0.82rem; }
+    #details-panel dt { color: var(--muted); margin-top: 8px; }
+    #details-panel dd { margin-left: 0; }
+    .controls {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 20;
+    }
+    .controls button {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      z-index: 50;
+      display: none;
+    }
+    @media (max-width: 768px) {
+      #sidebar { position: absolute; left: 0; top: 0; bottom: 0; z-index: 40; box-shadow: 4px 0 16px rgba(0,0,0,0.4); }
+      #details-panel { width: calc(100% - 24px); left: 12px; right: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button class="btn secondary small" id="toggle-sidebar" title="Hide panel">‹</button>
+    <div class="brand">
+      <h1>Tesla Branch Tree</h1>
+      <span class="app-ver">v0.09 beta by Mark Read</span>
+    </div>
+    <div class="view-toggle">
+      <button class="btn small active" id="view-tree">Tree</button>
+      <button class="btn small secondary" id="view-table">Table</button>
+    </div>
+    <button class="btn small" id="refresh-btn">Refresh Data</button>
+    <button class="btn secondary small" id="theme-btn">Theme</button>
+    <button class="btn secondary small" id="export-txt">Export path</button>
+    <button class="btn secondary small" id="export-png">Export PNG</button>
+    <div class="spacer"></div>
+    <span id="cache-status" style="font-size:0.8rem;color:var(--muted)"></span>
+  </header>
+
+  <main>
+    <aside id="sidebar">
+      <div class="card">
+        <h3>My Cars (up to 3)</h3>
+        <div class="car-list" id="car-list"></div>
+        <button class="btn small" id="add-car-btn" style="width:100%;margin-top:8px">+ Add Car</button>
+      </div>
+
+      <div class="card" id="active-car-panel">
+        <h3>Active Car</h3>
+        <label class="field">Name / Label</label>
+        <input type="text" id="car-name" placeholder="e.g. 2023 Model Y RWD" />
+        <label class="field">Model</label>
+        <select id="car-model">
+          <option value="Y">Model Y</option>
+          <option value="3">Model 3</option>
+          <option value="S">Model S</option>
+          <option value="X">Model X</option>
+          <option value="CT">Cybertruck</option>
+        </select>
+        <label class="field">Build Year / Month</label>
+        <input type="text" id="car-build" placeholder="2023/10" />
+        <label class="field">Variant</label>
+        <input type="text" id="car-variant" placeholder="RWD" />
+        <label class="field">Hardware</label>
+        <select id="car-hw">
+          <option value="3">HW3</option>
+          <option value="4">HW4 / AI4</option>
+        </select>
+        <label class="field">Current Version</label>
+        <input type="text" id="car-current" placeholder="2026.20.6.9" />
+        <label class="field">Last versions received (newest first — drag to reorder)</label>
+        <div class="hist-list" id="hist-list"></div>
+        <button class="btn small secondary" id="add-hist-btn" style="width:100%;margin-bottom:8px">+ Add version to history</button>
+        <button class="btn" id="save-car-btn" style="width:100%">Save Active Car</button>
+        <div class="pred" id="pred-box">Save the car to see a predicted next version.</div>
+      </div>
+
+      <div class="card">
+        <h3>View Options</h3>
+        <label class="check-row">
+          <input type="checkbox" id="grey-unrelated" checked />
+          <span>Grey out unrelated branches</span>
+        </label>
+        <label class="check-row">
+          <input type="checkbox" id="show-only-path" />
+          <span>Show only my path</span>
+        </label>
+        <label class="field" style="margin-top:10px">Watch countries (max 5 ISO codes)</label>
+        <div id="cc-slots" style="display:flex;gap:4px;margin-bottom:6px"></div>
+        <a href="https://www.iso.org/obp/ui/#search/code/" target="_blank" rel="noopener" style="font-size:0.72rem;color:var(--accent)">Official ISO country codes</a>
+      </div>
+
+      <div class="card">
+        <h3>Legend</h3>
+        <div class="legend">
+          <span><i style="background:#3b82f6"></i> Feature / production</span>
+          <span><i style="background:#8b5cf6"></i> FSD branch</span>
+          <span><i style="background:#64748b"></i> Factory</span>
+          <span><i style="background:#22c55e;box-shadow:0 0 0 2px #22c55e"></i> Current</span>
+          <span><i style="background:#f59e0b"></i> In my history</span>
+          <span>HW3 = observed on HW3 (orange)</span>
+          <span>HW4 = observed on HW4 (cobalt)</span>
+        </div>
+      </div>
+
+      <div class="card" style="font-size:0.72rem;color:var(--muted);line-height:1.45">
+        <h3>About this data</h3>
+        Reconstructed snapshot from Teslascope, Tessie, Not a Tesla App, TeslaFi, TeslAnt and Teslascope/X — not Tesla official. In-app Refresh cannot live-scrape those sites (due to browser CORS). Fleet labels such as “phasing out” are global tracker status. HW tags mean that version has been <em>observed</em> on that computer, not that every car globally with that computer received it.
+      </div>
+    </aside>
+
+    <div id="table-wrap">
+      <div class="table-toolbar">
+        <div class="filter-row">
+          <label>Country
+            <select id="f-cc"></select>
+          </label>
+          <label>Seen
+            <select id="f-seen">
+              <option value="">Any</option>
+              <option value="yes">Seen</option>
+              <option value="no">Not seen</option>
+            </select>
+          </label>
+          <label>FSD
+            <select id="f-fsd">
+              <option value="">Any</option>
+              <option value="none">None</option>
+              <option value="lite">Lite</option>
+              <option value="v14">v14.x</option>
+              <option value="any">Any FSD</option>
+            </select>
+          </label>
+          <label>Path
+            <select id="f-path">
+              <option value="">All</option>
+              <option value="mine">My path only</option>
+            </select>
+          </label>
+          <span id="table-count" style="font-size:0.75rem;color:var(--muted)"></span>
+          <label>HW
+            <select id="f-hw"><option value="">Any</option><option value="3">HW3</option><option value="4">HW4</option></select>
+          </label>
+          <label>Version contains
+            <input type="text" id="f-ver" placeholder="EG. 2026.20" />
+          </label>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="versions" id="ver-table">
+          <thead>
+            <tr>
+              <th data-sort="version">Version <span class="sort">↕</span></th>
+              <th data-sort="trunk">Trunk <span class="sort">↕</span></th>
+              <th data-sort="hw">HW <span class="sort">↕</span></th>
+              <th data-sort="fsd">FSD <span class="sort">↕</span></th>
+              <th data-sort="fleet">Fleet <span class="sort">↕</span></th>
+              <th data-sort="first">First seen <span class="sort">↕</span></th>
+              <th data-sort="seen">Seen in (watched) <span class="sort">↕</span></th>
+              <th data-sort="note">Notes <span class="sort">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="ver-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="tree-container">
+      <svg id="tree-svg"></svg>
+      <div class="tooltip" id="tooltip"></div>
+      <div class="controls">
+        <button id="zoom-in" title="Zoom in">+</button>
+        <button id="zoom-out" title="Zoom out">−</button>
+        <button id="zoom-fit" title="Fit">⛶</button>
+        <button id="zoom-path" title="Zoom to my path">◎</button>
+      </div>
+    </div>
+    <div id="details-panel">
+      <span class="close" id="close-details">✕</span>
+      <h3 id="details-title">Version</h3>
+      <div id="details-body"></div>
+    </div>
+  </main>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const APP_VERSION = "0.09 beta";
+    const DATA_SNAPSHOT = "2026-08-27";
+
+    const META = {
+      "2026.14": { first: "2026-04-15", fleet: "small leftover", fsd: "none on trunk", regions: "Global", hw: "HW3 + HW4", note: "Spring Update feature trunk. FSD point releases hang off 2026.14.6.x, not this parent." },
+      "2026.14.6": { first: "2026-05-12", fleet: "~4%", fsd: "none on this exact build", regions: "Global (US/CA/GB/AU in sample)", hw: "HW3 + HW4", note: "Security + minor features. HW4 FSD v14.3.3 is on 2026.14.6.6, not here." },
+      "2026.14.6.6": { first: "2026-05-17", fleet: "~4%", fsd: "HW4 v14.3.3", regions: "North America", hw: "HW4", note: "US+CA HW4 FSD v14.3.3. AU/NZ HW4 later used 2026.16.6 then 2026.20.10, not this number." },
+      "2026.14.6.10": { first: "2026-06-12", fleet: "~1%", fsd: "HW4 v14.3.4", regions: "North America", hw: "HW4", note: "US+CA HW4 v14.3.4 wave. Same stack later also on 2026.14.6.11 / .12." },
+      "2026.14.6.11": { first: "2026-06-15", fleet: "~4%", fsd: "HW4 v14.3.4", regions: "North America", hw: "HW4", note: "Teslascope sample is HW4 100% (US/CA). Not an AU/NZ or HW3 Lite build." },
+      "2026.14.6.12": { first: "2026-06-23", fleet: "~3%", fsd: "HW4 v14.3.4", regions: "North America", hw: "HW4", note: "Follow-on US+CA HW4 v14.3.4 point release." },
+      "2026.14.13": { first: "2026-08-01", fleet: "<0.1%", fsd: "—", regions: "Limited / Tessie only", hw: "Mixed", note: "Tiny leftover on Tessie. Teslascope page 404 — treat as unverified." },
+      "2026.20": { first: "2026-05-30", fleet: "phasing out", fsd: "none on trunk", regions: "US/CA/GB/EU (AU not in Teslascope sample)", hw: "HW3 + HW4", note: "Parental Controls, Dashcam encryption, Hey Grok. Lite is NOT on this parent — first Lite is 2026.20.5.1 (US HW3 EAP)." },
+      "2026.20.3": { first: "2026-06-17", fleet: "phasing out", fsd: "none", regions: "Global incl. AU 0.94% / NZ 0.19%", hw: "HW3 + HW4", note: "Blind-spot-while-parked + security. No Lite. Common hop before 2026.20.6.1." },
+      "2026.20.5.1": { first: "2026-06-29", fleet: "early access", fsd: "HW3 v14 Lite", regions: "United States", hw: "HW3", note: "First public Lite build — US HW3 early access only. Not AU/NZ." },
+      "2026.20.6": { first: "2026-06-29", fleet: "phasing out", fsd: "none — security only", regions: "US/GB/EU (no AU/NZ/CA in Teslascope sample)", hw: "HW3 + HW4", note: "Security point release only. Lite is on 2026.20.6.10 / .6.11 (US+CA), not on .6 itself. Having .6 does not mean you have Lite." },
+      "2026.20.6.1": { first: "2026-07-02", fleet: "~8%", fsd: "none on this exact build", regions: "Global incl. AU 1.19% / NZ 0.48%", hw: "HW3 + HW4", note: "Wide production / minor fixes. Teslascope lists AU+NZ installs but no Lite/v14 payload. AU HW3 often sat here then moved to 2026.20.6.9." },
+      "2026.20.6.6": { first: "2026-07-13", fleet: "~4%", fsd: "HW4 v14.3.5", regions: "North America", hw: "HW4", note: "US+CA HW4 v14.3.5. AU/NZ HW4 twin of this stack is 2026.20.10 (FSD v14.3.5 Down Under)." },
+      "2026.20.6.9": { first: "2026-07-29", fleet: "3.3%", fsd: "none — minor fixes only", regions: "Australia / New Zealand", hw: "HW3", note: "AU/NZ HW3 regional (~99% HW3). Not Lite. US+CA HW3 Lite is 2026.20.6.10 / .6.11. AU/NZ HW4 FSD v14.3.5 is 2026.20.10." },
+      "2026.20.6.10": { first: "2026-07-20", fleet: "small", fsd: "HW3 v14 Lite", regions: "United States", hw: "HW3", note: "US HW3 Lite (wide-prep). Canada/AU/NZ not in Teslascope sample. Next US+CA dual-stack is 2026.20.6.11." },
+      "2026.20.6.11": { first: "2026-07-21", fleet: "~2.6%", fsd: "HW3 v14 Lite + HW4 v14.3.6", regions: "North America", hw: "HW3 + HW4", note: "US+CA dual-stack. Teslascope countries: US 92% / CA 7%. Not an AU/NZ fleet build (isolated AU reports are unconfirmed vs this sample)." },
+      "2026.20.10": { first: "2026-07-28", fleet: "1.7%", fsd: "HW4 v14.3.5 Down Under", regions: "Australia / New Zealand", hw: "HW4", note: "AU/NZ HW4 FSD v14.3.5. Same driving stack as US+CA 2026.20.6.6. Not Lite; Lite is the HW3 distill." },
+      "2026.20.7.5": { first: "2026-08-06", fleet: "0.4%", fsd: "HW3 v14 Lite", regions: "South Korea", hw: "HW3", note: "Korea HW3 Lite early-access wave. Not US/AU/NZ in Teslascope sample." },
+      "2026.21.5": { first: "2026-08-01", fleet: "<0.1%", fsd: "HW4 v14.3.7", regions: "United States", hw: "HW4", note: "US HW4 seed before 2026.21.6 dual-stack." },
+      "2026.21.6": { first: "2026-08-09", fleet: "25.1%", fsd: "HW3 v14.1 Lite + HW4 v14.3.7", regions: "North America", hw: "HW3 + HW4", note: "Current US+CA FSD dual-stack. Teslascope: US 93% / CA 6%. AU/NZ not in this sample — do not treat as Down Under Lite." },
+      "2026.21.300": { first: "2026-08-10", fleet: "~1%", fsd: "FSD Supervised (factory/EU HW4)", regions: "NL / BE / DK", hw: "HW4", note: "European HW4 factory-style FSD enablement. Not a US/AU build." },
+      "2026.26": { first: "2026-07-26", fleet: "<0.1%", fsd: "none on trunk", regions: "US/CA/GB/EU seed", hw: "HW3 + HW4", note: "Summer Update seed. Feature payload lands on 2026.26.1+." },
+      "2026.26.1": { first: "2026-07-28", fleet: "2.9% phasing out", fsd: "none bundled as a new FSD drop", regions: "Global incl. AU 1.62%", hw: "HW3 + HW4", note: "Summer feature wave (Grok, navigation, traction modes). NZ not listed on Teslascope. FSD merge is later on 2026.26.6.5 (US+CA)." },
+      "2026.26.6": { first: "2026-08-11", fleet: "<0.1%", fsd: "none", regions: "Global incl. AU 2.63%", hw: "HW3 + HW4", note: "Short-lived Summer point before 2026.26.6.1." },
+      "2026.26.6.1": { first: "2026-08-14", fleet: "44.4% rolling out", fsd: "none new — production Summer", regions: "Global incl. AU 1.10% (NZ not listed)", hw: "HW3 + HW4", note: "Dominant Summer production build. Teslascope: US 46% / GB 10% / CA 3% / AU 1%. US+CA FSD merge is 2026.26.6.5, not this number." },
+      "2026.26.6.2": { first: "2026-08-22", fleet: "4.3% rolling out", fsd: "none", regions: "Mostly EU + some US/GB (small sample)", hw: "HW4 + some HW3", note: "Minor-fix wave after .6.1. Teslascope sample is Europe-heavy; AU/NZ/CA not listed." },
+      "2026.26.6.5": { first: "2026-08-26", fleet: "<0.1%", fsd: "HW3 v14.1 Lite + HW4 v14.3.8", regions: "North America", hw: "HW3 + HW4", note: "First Summer + latest US+CA FSD merge. Teslascope: US/CA only so far. AU/NZ twin not published on this number yet." },
+      "2026.27.100.1": { first: "2026-08-24", fleet: "0.6%", fsd: "FSD Supervised on HW4 (EU factory)", regions: "NL / BE / DK", hw: "HW4", note: "Factory / new-delivery EU branch, not a customer AU/US OTA target." }
+    };
+
+    // First-seen order among tracked sample (not official Tesla rollout order)
+    const SEEN_IN = {
+      "2026.14": ["US","CA","GB","DE"],
+      "2026.14.6": ["US","CA","GB","AU"],
+      "2026.14.6.6": ["US","CA"],
+      "2026.14.6.10": ["US","CA"],
+      "2026.14.6.11": ["US","CA"],
+      "2026.14.6.12": ["US","CA"],
+      "2026.14.13": [],
+      "2026.20": ["US","CA","GB"],
+      "2026.20.3": ["US","CA","GB","AU","NZ"],
+      "2026.20.5.1": ["US"],
+      "2026.20.6": ["US","GB"],
+      "2026.20.6.1": ["US","CA","GB","AU","NZ"],
+      "2026.20.6.6": ["US","CA"],
+      "2026.20.6.9": ["AU","NZ"],
+      "2026.20.6.10": ["US"],
+      "2026.20.6.11": ["US","CA"],
+      "2026.20.10": ["AU","NZ"],
+      "2026.20.7.5": ["KR"],
+      "2026.21.5": ["US"],
+      "2026.21.6": ["US","CA"],
+      "2026.21.300": ["NL","BE","DK"],
+      "2026.26": ["US","CA","GB"],
+      "2026.26.1": ["US","CA","GB","AU"],
+      "2026.26.6": ["US","CA","GB","AU"],
+      "2026.26.6.1": ["US","CA","GB","AU"],
+      "2026.26.6.2": ["US","GB"],
+      "2026.26.6.5": ["US","CA"],
+      "2026.27.100.1": ["NL","BE","DK"]
+    };
+
+    let watchCountries = ["AU","NZ","US","CA","GB"];
+    let currentView = "tree";
+    let tableSort = { key: "version", dir: 1 };
+
+    const TREE_DATA = {
+      name: "Tesla 2026",
+      type: "root",
+      version: "2026",
+      children: [
+        {
+          name: "2026.14 Spring",
+          type: "feature",
+          version: "2026.14",
+          children: [
+            { name: "2026.14.6", type: "point", version: "2026.14.6" },
+            { name: "2026.14.6.6", type: "point", version: "2026.14.6.6" },
+            { name: "2026.14.6.10", type: "point", version: "2026.14.6.10" },
+            { name: "2026.14.6.11", type: "point", version: "2026.14.6.11" },
+            { name: "2026.14.6.12", type: "point", version: "2026.14.6.12" },
+            { name: "2026.14.13", type: "point", version: "2026.14.13" }
+          ]
+        },
+        {
+          name: "2026.20 Feature + Lite",
+          type: "feature",
+          version: "2026.20",
+          children: [
+            { name: "2026.20", type: "point", version: "2026.20" },
+            { name: "2026.20.3", type: "point", version: "2026.20.3" },
+            { name: "2026.20.5.1", type: "point", version: "2026.20.5.1" },
+            { name: "2026.20.6", type: "point", version: "2026.20.6" },
+            { name: "2026.20.6.1", type: "point", version: "2026.20.6.1" },
+            { name: "2026.20.6.6", type: "point", version: "2026.20.6.6" },
+            { name: "2026.20.6.9", type: "point", version: "2026.20.6.9" },
+            { name: "2026.20.6.10", type: "point", version: "2026.20.6.10" },
+            { name: "2026.20.6.11", type: "point", version: "2026.20.6.11" },
+            { name: "2026.20.10", type: "point", version: "2026.20.10" },
+            { name: "2026.20.7.5", type: "point", version: "2026.20.7.5" }
+          ]
+        },
+        {
+          name: "2026.21 FSD dual",
+          type: "fsd",
+          version: "2026.21",
+          children: [
+            { name: "2026.21.5", type: "point", version: "2026.21.5" },
+            { name: "2026.21.6", type: "point", version: "2026.21.6" },
+            { name: "2026.21.300", type: "point", version: "2026.21.300" }
+          ]
+        },
+        {
+          name: "2026.26 Summer",
+          type: "feature",
+          version: "2026.26",
+          children: [
+            { name: "2026.26", type: "point", version: "2026.26" },
+            { name: "2026.26.1", type: "point", version: "2026.26.1" },
+            { name: "2026.26.6", type: "point", version: "2026.26.6" },
+            { name: "2026.26.6.1", type: "point", version: "2026.26.6.1" },
+            { name: "2026.26.6.2", type: "point", version: "2026.26.6.2" },
+            { name: "2026.26.6.5", type: "point", version: "2026.26.6.5" }
+          ]
+        },
+        {
+          name: "2026.27 Factory / EU",
+          type: "factory",
+          version: "2026.27",
+          children: [
+            { name: "2026.27.100.1", type: "point", version: "2026.27.100.1" }
+          ]
+        }
+      ]
+    };
+
+    // Observed typical next hops by current version + HW
+    const NEXT_MAP = {
+      "2026.20.6.9|3": { next: "2026.26.6.1", why: "AU/NZ HW3 cars on the 2026.20 regional build are most often jumping to the Summer production line." },
+      "2026.20.6.1|3": { next: "2026.21.6 or 2026.26.6.1", why: "FSD subscribers often go 2026.21.6; others merge onto Summer 2026.26.6.1." },
+      "2026.20.6.11|3": { next: "2026.21.6", why: "Observed US+CA HW3 hop from Lite dual-stack into 2026.21.6." },
+      "2026.21.6|3": { next: "2026.26.6.5 (later merge)", why: "FSD branch is being merged into Summer; HW3 may wait for a Lite-capable 2026.26 point release." },
+      "2026.21.6|4": { next: "2026.26.6.5", why: "HW4 cars are already moving from 2026.21.6 onto 2026.26.6.5 with FSD v14.3.8." },
+      "2026.26.6.1|3": { next: "2026.26.6.2", why: "On the main production line; next is the current point-fix wave." },
+      "2026.26.6.1|4": { next: "2026.26.6.2 / .6.5", why: "HW4 may skip to the FSD-merged .6.5." }
+    };
+
+    let cars = [];
+    let activeCarId = null;
+    let root = null;
+    let svg, g, zoomBehavior;
+    let dragSrc = null;
+
+    function toast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      setTimeout(() => { t.style.display = "none"; }, 2200);
+    }
+
+    function normVer(s) {
+      return (s || "").toLowerCase().replace(/\s+/g, "").replace(/[^0-9.]/g, "");
+    }
+
+    function extractVer(name) {
+      const m = (name || "").match(/(\d{4}(?:\.\d+){1,4})/);
+      return m ? m[1] : "";
+    }
+
+    function versionsMatch(a, b) {
+      const na = normVer(a), nb = normVer(b);
+      return !!na && na === nb;
+    }
+
+    function nodeVersion(d) {
+      return normVer(d.data.version || extractVer(d.data.name));
+    }
+
+    function nodeMatchesAny(nodeName, versions) {
+      const nv = normVer(extractVer(nodeName) || nodeName);
+      return versions.some(v => nv === normVer(v));
+    }
+
+    function ancestorOfHistory(d, vers) {
+      if (!d) return false;
+      if (nodeMatchesAny(d.data.name, vers) || nodeMatchesAny(d.data.version, vers)) return true;
+      return (d.children || []).some(ch => ancestorOfHistory(ch, vers));
+    }
+
+    function metaFor(version) {
+      if (META[version]) return META[version];
+      const key = Object.keys(META).find(k => versionsMatch(k, version));
+      return key ? META[key] : {};
+    }
+
+    function parseHw(hw) {
+      const s = (hw || "").toUpperCase();
+      const hw3 = /HW3|AI3|ALL|MIXED/.test(s);
+      const hw4 = /HW4|AI4|ALL|MIXED/.test(s);
+      return { hw3, hw4, raw: hw || "" };
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem("teslaBranchTree");
+        if (raw) {
+          const data = JSON.parse(raw);
+          cars = data.cars || [];
+          activeCarId = data.activeCarId || (cars[0] && cars[0].id) || null;
+          if (Array.isArray(data.watchCountries) && data.watchCountries.length) {
+            watchCountries = data.watchCountries.slice(0, 5);
+          }
+          if (data.currentView === "table" || data.currentView === "tree") currentView = data.currentView;
+        }
+      } catch (e) { console.warn(e); }
+      if (cars.length === 0) {
+        const id = Date.now().toString();
+        cars.push({
+          id,
+          name: "2023 Model Y RWD HW3",
+          model: "Y",
+          build: "2023/10",
+          variant: "RWD",
+          hw: "3",
+          current: "2026.20.6.9",
+          history: ["2026.20.6.9", "2026.20.6.1", "2026.14.6.11"]
+        });
+        activeCarId = id;
+        saveState();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem("teslaBranchTree", JSON.stringify({
+        cars,
+        activeCarId,
+        watchCountries,
+        currentView,
+        cachedAt: Date.now(),
+        snapshot: DATA_SNAPSHOT
+      }));
+      updateCacheStatus();
+    }
+
+    function updateCacheStatus() {
+      const el = document.getElementById("cache-status");
+      const raw = localStorage.getItem("teslaBranchTree");
+      if (raw) {
+        const d = JSON.parse(raw);
+        const mins = Math.round((Date.now() - (d.cachedAt || 0)) / 60000);
+        el.textContent = mins < 2
+          ? `Snapshot ${DATA_SNAPSHOT} · just now`
+          : `Snapshot ${DATA_SNAPSHOT} · ${mins}m ago`;
+      }
+    }
+
+    function getActiveCar() {
+      return cars.find(c => c.id === activeCarId) || null;
+    }
+
+    function watchedList() {
+      return watchCountries.map(c => (c || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2)).filter(c => c.length === 2);
+    }
+
+    function seenLines(version) {
+      const seen = (SEEN_IN[version] || []).map(c => c.toUpperCase());
+      const watch = watchedList();
+      const yes = watch.filter(c => seen.includes(c));
+      const no = watch.filter(c => !seen.includes(c));
+      let html = "";
+      if (yes.length) html += `Seen in ${yes.join(", ")}`;
+      else html += "Seen in — (none of your watched countries in this snapshot)";
+      if (no.length) html += `<br>Not seen in ${no.join(", ")}`;
+      return html;
+    }
+
+    function setView(view) {
+      currentView = view === "table" ? "table" : "tree";
+      document.getElementById("tree-container").classList.toggle("hidden", currentView === "table");
+      document.getElementById("table-wrap").classList.toggle("visible", currentView === "table");
+      document.getElementById("view-tree").classList.toggle("active", currentView === "tree");
+      document.getElementById("view-table").classList.toggle("active", currentView === "table");
+      document.getElementById("view-tree").classList.toggle("secondary", currentView !== "tree");
+      document.getElementById("view-table").classList.toggle("secondary", currentView !== "table");
+      saveState();
+      if (currentView === "table") renderTable();
+      else setTimeout(() => { if (typeof zoomFit === "function") zoomFit(); }, 40);
+    }
+
+    function collectLeaves() {
+      const rows = [];
+      (TREE_DATA.children || []).forEach(trunk => {
+        (trunk.children || []).forEach(leaf => {
+          const ver = leaf.version || extractVer(leaf.name);
+          const m = metaFor(ver);
+          rows.push({
+            version: ver,
+            name: leaf.name,
+            trunk: trunk.name,
+            hw: m.hw || "",
+            fsd: m.fsd || "—",
+            fleet: m.fleet || "—",
+            first: m.first || "",
+            note: m.note || "",
+            data: leaf
+          });
+        });
+      });
+      return rows;
+    }
+
+    function verKey(v) {
+      return (v || "").split(".").map(n => String(n).padStart(4, "0")).join(".");
+    }
+
+    function fillCountryFilter() {
+      const sel = document.getElementById("f-cc");
+      if (!sel) return;
+      const keep = sel.value;
+      const codes = watchedList();
+      sel.innerHTML = `<option value="">Any</option>` + codes.map(c => `<option value="${c}">${c}</option>`).join("");
+      if (keep && [...sel.options].some(o => o.value === keep)) sel.value = keep;
+    }
+
+    function applyTableFilters(rows) {
+      const hw = document.getElementById("f-hw").value;
+      const verQ = (document.getElementById("f-ver").value || "").trim().toLowerCase();
+      const cc = document.getElementById("f-cc").value;
+      const seen = document.getElementById("f-seen").value;
+      const fsd = document.getElementById("f-fsd").value;
+      const path = document.getElementById("f-path").value;
+      const hist = historyVersions();
+      return rows.filter(r => {
+        const tags = parseHw(r.hw);
+        if (hw === "3" && !tags.hw3) return false;
+        if (hw === "4" && !tags.hw4) return false;
+        if (verQ && !(r.version + " " + r.trunk).toLowerCase().includes(verQ)) return false;
+        const seenList = (SEEN_IN[r.version] || []).map(c => c.toUpperCase());
+        if (cc) {
+          const has = seenList.includes(cc);
+          if (seen === "yes" && !has) return false;
+          if (seen === "no" && has) return false;
+          if (!seen && !has) return false;
+        } else if (seen === "yes" && !watchedList().some(c => seenList.includes(c))) return false;
+        else if (seen === "no" && watchedList().every(c => seenList.includes(c))) return false;
+        const fl = (r.fsd || "").toLowerCase();
+        const none = !fl || fl === "—" || /none/.test(fl);
+        if (fsd === "none" && !none) return false;
+        if (fsd === "lite" && !/lite/.test(fl)) return false;
+        if (fsd === "v14" && !/v14/.test(fl)) return false;
+        if (fsd === "any" && none) return false;
+        if (path === "mine" && !hist.some(v => normVer(v) === normVer(r.version))) return false;
+        return true;
+      });
+    }
+
+    function renderTable() {
+      fillCountryFilter();
+      let rows = applyTableFilters(collectLeaves());
+      const key = tableSort.key;
+      rows.sort((a, b) => {
+        let av = a[key] || "", bv = b[key] || "";
+        if (key === "version" || key === "first") {
+          av = key === "version" ? verKey(a.version) : a.first;
+          bv = key === "version" ? verKey(b.version) : b.first;
+        }
+        return av < bv ? -tableSort.dir : av > bv ? tableSort.dir : 0;
+      });
+      const hist = historyVersions();
+      const current = getActiveCar() && getActiveCar().current;
+      const grey = document.getElementById("grey-unrelated").checked;
+      const tb = document.getElementById("ver-tbody");
+      tb.innerHTML = rows.map(r => {
+        const exact = hist.some(v => normVer(v) === normVer(r.version));
+        const isCur = current && normVer(current) === normVer(r.version);
+        const idx = hist.findIndex(v => normVer(v) === normVer(r.version));
+        const tags = parseHw(r.hw);
+        const cls = [isCur ? "current" : "", exact && !isCur ? "history" : "", grey && !exact ? "greyed" : ""].filter(Boolean).join(" ");
+        const badge = isCur ? `<span class="pill now">NOW</span>` : (idx >= 0 ? `<span class="pill hist">#${idx + 1}</span>` : "");
+        const hwHtml = (tags.hw3 ? `<span class="hw-mini hw3">HW3</span>` : "") + (tags.hw4 ? `<span class="hw-mini hw4">HW4</span>` : (tags.hw3 ? "" : "—"));
+        return `<tr class="${cls}" data-ver="${r.version}">
+          <td>${badge}${r.version}</td>
+          <td>${r.trunk}</td>
+          <td>${hwHtml}</td>
+          <td>${r.fsd}</td>
+          <td>${r.fleet}</td>
+          <td>${r.first || "—"}</td>
+          <td>${seenLines(r.version)}</td>
+          <td>${r.note || "—"}</td>
+        </tr>`;
+      }).join("");
+      document.getElementById("table-count").textContent = rows.length + " rows";
+      document.querySelectorAll("#ver-table th").forEach(th => {
+        const k = th.getAttribute("data-sort");
+        const on = k === tableSort.key;
+        th.classList.toggle("active-sort", on);
+        const mark = th.querySelector(".sort");
+        if (mark) mark.textContent = on ? (tableSort.dir === 1 ? "↑" : "↓") : "↕";
+      });
+      tb.querySelectorAll("tr").forEach(tr => {
+        tr.onclick = () => {
+          const ver = tr.getAttribute("data-ver");
+          const row = collectLeaves().find(x => x.version === ver);
+          if (row) showDetails(row.data);
+        };
+      });
+    }
+
+    function renderCcSlots() {
+      const wrap = document.getElementById("cc-slots");
+      if (!wrap) return;
+      wrap.innerHTML = "";
+      for (let i = 0; i < 5; i++) {
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.maxLength = 2;
+        inp.placeholder = "—";
+        inp.value = watchCountries[i] || "";
+        inp.style.cssText = "width:42px;text-align:center;text-transform:uppercase;margin:0";
+        inp.addEventListener("change", () => {
+          const next = [...document.querySelectorAll("#cc-slots input")].map(el => el.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2));
+          watchCountries = next;
+          saveState();
+          fillCountryFilter();
+          if (currentView === "table") renderTable();
+        });
+        wrap.appendChild(inp);
+      }
+    }
+
+    function renderCarList() {
+      const list = document.getElementById("car-list");
+      list.innerHTML = "";
+      cars.forEach(car => {
+        const div = document.createElement("div");
+        div.className = "car-item" + (car.id === activeCarId ? " active" : "");
+        div.innerHTML = `<span class="name">${car.name || "Unnamed"}</span>
+          <button class="btn small secondary" style="padding:2px 6px">✕</button>`;
+        div.querySelector("span").onclick = () => {
+          activeCarId = car.id;
+          saveState();
+          populateActiveForm();
+          renderCarList();
+          updateTreeHighlights();
+          updatePrediction();
+        };
+        div.querySelector("button").onclick = (e) => {
+          e.stopPropagation();
+          if (cars.length <= 1) return toast("Keep at least one car");
+          cars = cars.filter(c => c.id !== car.id);
+          if (activeCarId === car.id) activeCarId = cars[0].id;
+          saveState();
+          populateActiveForm();
+          renderCarList();
+          updateTreeHighlights();
+          updatePrediction();
+        };
+        list.appendChild(div);
+      });
+    }
+
+    function readHistoryFromUI() {
+      return [...document.querySelectorAll("#hist-list input")]
+        .map(i => i.value.trim())
+        .filter(Boolean);
+    }
+
+    function renderHistory(list) {
+      const wrap = document.getElementById("hist-list");
+      wrap.innerHTML = "";
+      (list || []).forEach((ver, idx) => {
+        const row = document.createElement("div");
+        row.className = "hist-item";
+        row.draggable = true;
+        row.dataset.idx = idx;
+        row.innerHTML = `<span class="grip" title="Drag">⋮⋮</span>
+          <input type="text" value="${ver}" />
+          <button class="rm" title="Remove">✕</button>`;
+        row.addEventListener("dragstart", (e) => { dragSrc = row; row.style.opacity = "0.5"; e.dataTransfer.effectAllowed = "move"; });
+        row.addEventListener("dragend", () => { row.style.opacity = "1"; dragSrc = null; });
+        row.addEventListener("dragover", (e) => { e.preventDefault(); });
+        row.addEventListener("drop", (e) => {
+          e.preventDefault();
+          if (!dragSrc || dragSrc === row) return;
+          const items = readHistoryFromUI();
+          const from = Number(dragSrc.dataset.idx);
+          const to = Number(row.dataset.idx);
+          const [moved] = items.splice(from, 1);
+          items.splice(to, 0, moved);
+          renderHistory(items);
+        });
+        row.querySelector(".rm").onclick = () => {
+          const items = readHistoryFromUI().filter((_, i) => i !== idx);
+          renderHistory(items);
+        };
+        wrap.appendChild(row);
+      });
+    }
+
+    function populateActiveForm() {
+      const car = getActiveCar();
+      if (!car) return;
+      document.getElementById("car-name").value = car.name || "";
+      document.getElementById("car-model").value = car.model || "Y";
+      document.getElementById("car-build").value = car.build || "";
+      document.getElementById("car-variant").value = car.variant || "";
+      document.getElementById("car-hw").value = car.hw || "3";
+      document.getElementById("car-current").value = car.current || "";
+      renderHistory(car.history || []);
+      updatePrediction();
+    }
+
+    function saveActiveCar() {
+      const car = getActiveCar();
+      if (!car) return;
+      car.name = document.getElementById("car-name").value.trim() || "Unnamed";
+      car.model = document.getElementById("car-model").value;
+      car.build = document.getElementById("car-build").value.trim();
+      car.variant = document.getElementById("car-variant").value.trim();
+      car.hw = document.getElementById("car-hw").value;
+      car.current = document.getElementById("car-current").value.trim();
+      car.history = readHistoryFromUI();
+      if (car.current && !car.history.includes(car.current)) {
+        car.history.unshift(car.current);
+        renderHistory(car.history);
+      }
+      saveState();
+      renderCarList();
+      updateTreeHighlights();
+      updatePrediction();
+      if (currentView === "table") renderTable();
+      toast("Car saved");
+    }
+
+    function updatePrediction() {
+      const car = getActiveCar();
+      const box = document.getElementById("pred-box");
+      if (!car || !car.current) {
+        box.innerHTML = "Enter a current version to see a predicted next hop.";
+        return;
+      }
+      const key = `${car.current}|${car.hw}`;
+      const hit = NEXT_MAP[key] || NEXT_MAP[`${extractVer(car.current)}|${car.hw}`];
+      if (hit) {
+        box.innerHTML = `<strong>Predicted next:</strong> ${hit.next}<br><span style="color:var(--muted)">${hit.why}</span>`;
+      } else {
+        const hwHint = car.hw === "3"
+          ? "HW3 cars on 2026.20.x typically move to 2026.21.6 (if FSD) or 2026.26.6.1 (Summer production)."
+          : "HW4 cars are consolidating onto 2026.26.6.x with the latest FSD.";
+        box.innerHTML = `<strong>Predicted next:</strong> 2026.26.6.1<br><span style="color:var(--muted)">${hwHint}</span>`;
+      }
+    }
+
+    function buildTree() {
+      d3.select("#tree-svg").selectAll("*").remove();
+      svg = d3.select("#tree-svg");
+      g = svg.append("g");
+
+      zoomBehavior = d3.zoom()
+        .scaleExtent([0.15, 4])
+        .on("zoom", (event) => g.attr("transform", event.transform));
+      svg.call(zoomBehavior);
+
+      const hierarchy = d3.hierarchy(TREE_DATA);
+      const treeLayout = d3.tree().nodeSize([40, 268]);
+      root = treeLayout(hierarchy);
+      const nodes = root.descendants();
+      const links = root.links();
+
+      g.selectAll(".link")
+        .data(links)
+        .join("path")
+        .attr("class", "link")
+        .attr("d", d3.linkHorizontal().x(d => d.y).y(d => d.x));
+
+      const node = g.selectAll(".node")
+        .data(nodes)
+        .join("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${d.y},${d.x})`)
+        .on("click", (event, d) => showDetails(d.data))
+        .on("mouseover", (event, d) => showTip(event, d))
+        .on("mousemove", (event, d) => showTip(event, d))
+        .on("mouseout", () => { document.getElementById("tooltip").style.display = "none"; });
+
+      node.append("circle")
+        .attr("r", d => d.data.type === "point" ? 5.5 : 8)
+        .attr("fill", d => {
+          if (d.data.type === "fsd") return "#8b5cf6";
+          if (d.data.type === "factory") return "#64748b";
+          if (d.data.type === "root") return "#334155";
+          return "#3b82f6";
+        })
+        .attr("stroke", "var(--bg)");
+
+      node.append("text")
+        .attr("class", "lbl")
+        .attr("dy", "0.32em")
+        .attr("x", d => d.children ? -12 : 12)
+        .attr("text-anchor", d => d.children ? "end" : "start")
+        .text(d => d.data.name);
+
+      node.each(function(d) {
+        if (d.data.type === "root" || d.children) return;
+        const m = metaFor(d.data.version || extractVer(d.data.name));
+        const tags = parseHw(m.hw);
+        const list = [];
+        if (tags.hw3) list.push({ t: "HW3", c: "#f97316" });
+        if (tags.hw4) list.push({ t: "HW4", c: "#2563eb" });
+        if (!list.length) return;
+        const isLeft = !!d.children;
+        const labelW = (d.data.name || "").length * 6.2;
+        let x = isLeft ? -12 - labelW - 4 : 12 + labelW + 8;
+        const sel = d3.select(this);
+        list.forEach(tag => {
+          sel.append("rect")
+            .attr("x", x)
+            .attr("y", -7)
+            .attr("width", 28)
+            .attr("height", 13)
+            .attr("rx", 2)
+            .attr("fill", "#0a0a0a")
+            .attr("stroke", "#9aa0a6")
+            .attr("stroke-width", 0.8);
+          sel.append("text")
+            .attr("class", "hw-tag " + tag.t.toLowerCase())
+            .attr("x", x + 14)
+            .attr("y", 3)
+            .attr("text-anchor", "middle")
+            .text(tag.t);
+          x += 32;
+        });
+      });
+
+      setTimeout(() => zoomFit(), 40);
+      updateTreeHighlights();
+    }
+
+    function historyVersions() {
+      const car = getActiveCar();
+      if (!car) return [];
+      const list = [...(car.history || [])];
+      if (car.current) list.unshift(car.current);
+      return [...new Set(list.map(v => v.trim()).filter(Boolean))];
+    }
+
+    function updateTreeHighlights() {
+      if (!root || !g) return;
+      const car = getActiveCar();
+      const vers = historyVersions();
+      const current = car && car.current ? normVer(car.current) : "";
+      const greyUnrelated = document.getElementById("grey-unrelated").checked;
+      const showOnlyPath = document.getElementById("show-only-path").checked;
+
+      g.selectAll(".node").each(function(d) {
+        const exact = vers.some(v => nodeVersion(d) === normVer(v));
+        const isCur = current && nodeVersion(d) === current;
+        const onTrunk = ancestorOfHistory(d, vers) || d.data.type === "root";
+        const keep = exact || onTrunk;
+        d3.select(this)
+          .classed("greyed", greyUnrelated && !exact)
+          .classed("current", !!isCur)
+          .classed("history", exact && !isCur)
+          .style("display", showOnlyPath && !keep ? "none" : null);
+
+        d3.select(this).selectAll("text.badge").remove();
+        if (isCur) {
+          d3.select(this).append("text")
+            .attr("class", "badge")
+            .attr("x", 12)
+            .attr("y", -10)
+            .text("NOW");
+        } else if (exact) {
+          const idx = vers.findIndex(v => nodeVersion(d) === normVer(v));
+          if (idx >= 0) {
+            d3.select(this).append("text")
+              .attr("class", "badge")
+              .attr("x", 12)
+              .attr("y", -10)
+              .text("#" + (idx + 1));
+          }
+        }
+      });
+
+      g.selectAll(".link")
+        .classed("path-link", d => {
+          const tExact = vers.some(v => nodeVersion(d.target) === normVer(v));
+          const sExact = vers.some(v => nodeVersion(d.source) === normVer(v));
+          const tTrunk = ancestorOfHistory(d.target, vers);
+          return tExact || (sExact && tTrunk) || (ancestorOfHistory(d.source, vers) && tExact);
+        })
+        .style("display", function(d) {
+          if (!showOnlyPath) return null;
+          const keep = ancestorOfHistory(d.source, vers) || ancestorOfHistory(d.target, vers);
+          return keep ? null : "none";
+        });
+    }
+
+    function showTip(event, d) {
+      const m = metaFor(d.data.version || extractVer(d.data.name));
+      const tip = document.getElementById("tooltip");
+      const wrap = document.getElementById("tree-container");
+      const hw = parseHw(m.hw);
+      const hwLine = (hw.hw3 || hw.hw4)
+        ? `<br>Observed on: ${[hw.hw3 ? "HW3" : null, hw.hw4 ? "HW4" : null].filter(Boolean).join(" + ")}${m.hw && /mostly/i.test(m.hw) ? " (" + m.hw + ")" : ""}`
+        : (m.hw ? `<br>Hardware: ${m.hw}` : "");
+      const ver = d.data.version || extractVer(d.data.name);
+      tip.innerHTML = `<strong>${d.data.name}</strong>`
+        + (m.note ? `<br>${m.note}` : "")
+        + (m.fsd ? `<br>FSD: ${m.fsd}` : "")
+        + (m.fleet ? `<br>Fleet: ${m.fleet}` : "")
+        + hwLine
+        + `<br>${seenLines(ver)}`;
+      tip.style.display = "block";
+      const rect = wrap.getBoundingClientRect();
+      const tw = tip.offsetWidth || 220;
+      const th = tip.offsetHeight || 80;
+      let x = event.clientX - rect.left + 14;
+      let y = event.clientY - rect.top - 10;
+      if (x + tw > rect.width - 8) x = event.clientX - rect.left - tw - 14;
+      if (x < 8) x = 8;
+      if (y + th > rect.height - 8) y = rect.height - th - 8;
+      if (y < 8) y = 8;
+      tip.style.left = x + "px";
+      tip.style.top = y + "px";
+    }
+
+    function showDetails(data) {
+      const version = data.version || extractVer(data.name);
+      const m = metaFor(version);
+      const panel = document.getElementById("details-panel");
+      document.getElementById("details-title").textContent = data.name;
+      document.getElementById("details-body").innerHTML = `
+        <dl>
+          <dt>Version</dt><dd>${version || "—"}</dt>
+          <dt>First seen</dt><dd>${m.first || "—"}</dd>
+          <dt>Approx. fleet share</dt><dd>${m.fleet || "—"}</dd>
+          <dt>FSD build</dt><dd>${m.fsd || "—"}</dd>
+          <dt>Observed on</dt><dd>${m.hw || "—"} (tracker observations, not a guarantee for every car)</dd>
+          <dt>Watched countries</dt><dd>${seenLines(version)}</dd>
+          <dt>Regions</dt><dd>${m.regions || "—"}</dd>
+          ${m.note ? `<dt>Notes</dt><dd>${m.note}</dd>` : ""}
+        </dl>
+        <p style="margin-top:10px;font-size:0.78rem;color:var(--muted)">Observed snapshot ${DATA_SNAPSHOT}. Trackers: Teslascope / Tessie / Not a Tesla App. Not official Tesla data.</p>
+      `;
+      panel.style.display = "block";
+    }
+
+    function zoomFit() {
+      if (!root || !g.node()) return;
+      const bounds = g.node().getBBox();
+      const fullWidth = document.getElementById("tree-container").clientWidth;
+      const fullHeight = document.getElementById("tree-container").clientHeight;
+      if (!bounds.width || !bounds.height) return;
+      const scale = 0.85 / Math.max(bounds.width / fullWidth, bounds.height / fullHeight);
+      const translate = [
+        fullWidth / 2 - scale * (bounds.x + bounds.width / 2),
+        fullHeight / 2 - scale * (bounds.y + bounds.height / 2)
+      ];
+      svg.transition().duration(350).call(
+        zoomBehavior.transform,
+        d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+      );
+    }
+
+    function zoomToPath() {
+      if (!root) return;
+      const vers = historyVersions();
+      const hits = root.descendants().filter(d => nodeMatchesAny(d.data.name, vers) || nodeMatchesAny(d.data.version, vers));
+      if (!hits.length) return zoomFit();
+      const xs = hits.map(d => d.x), ys = hits.map(d => d.y);
+      const minX = Math.min(...xs) - 40, maxX = Math.max(...xs) + 40;
+      const minY = Math.min(...ys) - 80, maxY = Math.max(...ys) + 180;
+      const fullWidth = document.getElementById("tree-container").clientWidth;
+      const fullHeight = document.getElementById("tree-container").clientHeight;
+      const scale = 0.9 / Math.max((maxY - minY) / fullWidth, (maxX - minX) / fullHeight);
+      const tx = fullWidth / 2 - scale * ((minY + maxY) / 2);
+      const ty = fullHeight / 2 - scale * ((minX + maxX) / 2);
+      svg.transition().duration(400).call(
+        zoomBehavior.transform,
+        d3.zoomIdentity.translate(tx, ty).scale(Math.min(scale, 2.2))
+      );
+    }
+
+    async function refreshData() {
+      const btn = document.getElementById("refresh-btn");
+      btn.textContent = "Refreshing…";
+      // Trackers block browser CORS. We keep a local snapshot and stamp a refresh.
+      // If a future proxy/API exists, swap this block for a real fetch.
+      try {
+        await new Promise(r => setTimeout(r, 400));
+        saveState();
+        buildTree();
+        if (currentView === "table") renderTable();
+        toast("Refreshed local snapshot (" + DATA_SNAPSHOT + "). Live tracker fetch is blocked by CORS in-browser.");
+      } finally {
+        btn.textContent = "Refresh Data";
+      }
+    }
+
+    function exportPathText() {
+      const car = getActiveCar();
+      if (!car) return;
+      const lines = [
+        `Tesla Branch Tree v${APP_VERSION}`,
+        `Car: ${car.name} · ${car.model} ${car.variant} ${car.build} HW${car.hw}`,
+        `Current: ${car.current || "—"}`,
+        `History (newest first):`,
+        ...(car.history || []).map((v, i) => `  ${i + 1}. ${v}`),
+        document.getElementById("pred-box").innerText
+      ];
+      const text = lines.join("\n");
+      navigator.clipboard.writeText(text).then(() => toast("Path text copied to clipboard")).catch(() => {
+        prompt("Copy path:", text);
+      });
+    }
+
+    function downloadCanvas(canvas, name) {
+      const a = document.createElement("a");
+      a.download = name;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+      toast("PNG exported");
+    }
+
+    function styleCloneFromLive(liveRoot, cloneRoot) {
+      const live = [liveRoot, ...liveRoot.querySelectorAll("*")];
+      const copy = [cloneRoot, ...cloneRoot.querySelectorAll("*")];
+      const n = Math.min(live.length, copy.length);
+      for (let i = 0; i < n; i++) {
+        const cs = getComputedStyle(live[i]);
+        const el = copy[i];
+        const tag = el.tagName.toLowerCase();
+        if (tag === "svg" || tag === "g") continue;
+        if (cs.fill && cs.fill !== "none") el.setAttribute("fill", cs.fill);
+        if (cs.stroke && cs.stroke !== "none") el.setAttribute("stroke", cs.stroke);
+        else if (tag === "path") el.setAttribute("stroke", cs.stroke || "#4b5563");
+        if (cs.strokeWidth) el.setAttribute("stroke-width", cs.strokeWidth);
+        if (cs.opacity && cs.opacity !== "1") el.setAttribute("opacity", cs.opacity);
+        if (tag === "text") {
+          el.setAttribute("font-size", cs.fontSize);
+          el.setAttribute("font-family", "Arial, Helvetica, sans-serif");
+          el.setAttribute("font-weight", cs.fontWeight);
+        }
+        if (tag === "path") el.setAttribute("fill", "none");
+      }
+    }
+
+    function exportTreePng() {
+      const svgEl = document.getElementById("tree-svg");
+      if (!svgEl || !g || !g.node()) return toast("Tree is not ready to export");
+      const hidden = document.getElementById("tree-container").classList.contains("hidden");
+      if (hidden) document.getElementById("tree-container").classList.remove("hidden");
+      const bbox = g.node().getBBox();
+      if (hidden) document.getElementById("tree-container").classList.add("hidden");
+      const pad = 48;
+      const clone = svgEl.cloneNode(true);
+      clone.removeAttribute("style");
+      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      const gClone = clone.querySelector("g");
+      if (gClone) gClone.setAttribute("transform", `translate(${pad - bbox.x},${pad - bbox.y})`);
+      styleCloneFromLive(svgEl, clone);
+      const w = Math.ceil(bbox.width + pad * 2);
+      const h = Math.ceil(bbox.height + pad * 2);
+      clone.setAttribute("width", w);
+      clone.setAttribute("height", h);
+      clone.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      bg.setAttribute("x", "0");
+      bg.setAttribute("y", "0");
+      bg.setAttribute("width", String(w));
+      bg.setAttribute("height", String(h));
+      bg.setAttribute("fill", getComputedStyle(document.body).backgroundColor || "#0f1115");
+      clone.insertBefore(bg, clone.firstChild);
+      const xml = new XMLSerializer().serializeToString(clone);
+      const url = URL.createObjectURL(new Blob([xml], { type: "image/svg+xml;charset=utf-8" }));
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = getComputedStyle(document.body).backgroundColor || "#0f1115";
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        downloadCanvas(canvas, "tesla-branch-tree.png");
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        toast("PNG export failed — try Tree view after a refresh");
+      };
+      img.src = url;
+    }
+
+    function exportTablePng() {
+      const table = document.getElementById("ver-table");
+      if (!table) return toast("Table is not ready to export");
+      const rows = [...table.querySelectorAll("tr")].map(tr =>
+        [...tr.children].map(td => td.innerText.replace(/\s+/g, " ").trim())
+      );
+      if (!rows.length) return toast("No table rows to export");
+      const colW = [130, 150, 80, 220, 110, 100, 200, 360];
+      const rowH = 28;
+      const pad = 20;
+      const width = colW.reduce((a, b) => a + b, 0) + pad * 2;
+      const height = rows.length * rowH + pad * 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      const bg = getComputedStyle(document.body).backgroundColor || "#0f1115";
+      const fg = getComputedStyle(document.body).color || "#e8eaed";
+      const muted = getComputedStyle(document.getElementById("cache-status")).color || "#9aa0a6";
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+      ctx.font = "12px Arial, Helvetica, sans-serif";
+      rows.forEach((cols, ri) => {
+        const y = pad + ri * rowH;
+        if (ri === 0) {
+          ctx.fillStyle = getComputedStyle(document.getElementById("table-wrap")).backgroundColor || "#1a1d24";
+          ctx.fillRect(pad, y, width - pad * 2, rowH);
+        }
+        ctx.fillStyle = ri === 0 ? muted : fg;
+        ctx.font = ri === 0 ? "bold 12px Arial, Helvetica, sans-serif" : "12px Arial, Helvetica, sans-serif";
+        let x = pad + 6;
+        cols.forEach((text, ci) => {
+          const max = (colW[ci] || 120) - 10;
+          let t = text || "";
+          while (t.length > 4 && ctx.measureText(t).width > max) t = t.slice(0, -2);
+          if (t !== (text || "") && t.length) t = t.slice(0, -1) + "…";
+          ctx.fillText(t, x, y + 18);
+          x += colW[ci] || 120;
+        });
+        ctx.strokeStyle = "rgba(150,150,150,0.25)";
+        ctx.beginPath();
+        ctx.moveTo(pad, y + rowH);
+        ctx.lineTo(width - pad, y + rowH);
+        ctx.stroke();
+      });
+      downloadCanvas(canvas, "tesla-branch-table.png");
+    }
+
+    function exportPng() {
+      if (currentView === "table") exportTablePng();
+      else exportTreePng();
+    }
+
+    document.getElementById("toggle-sidebar").onclick = () => {
+      const side = document.getElementById("sidebar");
+      side.classList.toggle("collapsed");
+      const hidden = side.classList.contains("collapsed");
+      const btn = document.getElementById("toggle-sidebar");
+      btn.textContent = hidden ? "›" : "‹";
+      btn.title = hidden ? "Show panel" : "Hide panel";
+    };
+    document.getElementById("theme-btn").onclick = () => {
+      const html = document.documentElement;
+      const next = html.getAttribute("data-theme") === "light" ? "dark" : "light";
+      html.setAttribute("data-theme", next === "dark" ? "" : "light");
+      localStorage.setItem("theme", next);
+    };
+    document.getElementById("save-car-btn").onclick = saveActiveCar;
+    document.getElementById("add-car-btn").onclick = () => {
+      if (cars.length >= 3) return toast("Maximum 3 cars");
+      const id = Date.now().toString();
+      cars.push({ id, name: "New Car", model: "Y", build: "", variant: "", hw: "3", current: "", history: [] });
+      activeCarId = id;
+      saveState();
+      populateActiveForm();
+      renderCarList();
+    };
+    document.getElementById("add-hist-btn").onclick = () => {
+      renderHistory([...readHistoryFromUI(), ""]);
+    };
+    document.getElementById("refresh-btn").onclick = refreshData;
+    document.getElementById("export-txt").onclick = exportPathText;
+    document.getElementById("export-png").onclick = exportPng;
+    document.getElementById("grey-unrelated").onchange = () => { updateTreeHighlights(); if (currentView === "table") renderTable(); };
+    document.getElementById("show-only-path").onchange = updateTreeHighlights;
+    document.getElementById("view-tree").onclick = () => setView("tree");
+    document.getElementById("view-table").onclick = () => setView("table");
+    ["f-hw","f-ver","f-cc","f-seen","f-fsd","f-path"].forEach(id => {
+      document.getElementById(id).addEventListener("input", renderTable);
+      document.getElementById(id).addEventListener("change", renderTable);
+    });
+    document.querySelectorAll("#ver-table th").forEach(th => {
+      th.onclick = () => {
+        const k = th.getAttribute("data-sort");
+        if (tableSort.key === k) tableSort.dir *= -1;
+        else { tableSort.key = k; tableSort.dir = 1; }
+        renderTable();
+      };
+    });
+    document.getElementById("close-details").onclick = () => {
+      document.getElementById("details-panel").style.display = "none";
+    };
+    document.getElementById("zoom-in").onclick = () => svg.transition().call(zoomBehavior.scaleBy, 1.3);
+    document.getElementById("zoom-out").onclick = () => svg.transition().call(zoomBehavior.scaleBy, 0.7);
+    document.getElementById("zoom-fit").onclick = zoomFit;
+    document.getElementById("zoom-path").onclick = zoomToPath;
+    document.getElementById("car-current").addEventListener("change", updatePrediction);
+    document.getElementById("car-hw").addEventListener("change", updatePrediction);
+
+    if (localStorage.getItem("theme") === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+    loadState();
+    renderCarList();
+    populateActiveForm();
+    renderCcSlots();
+    updateCacheStatus();
+    buildTree();
+    fillCountryFilter();
+    setView(currentView);
+    window.addEventListener("resize", () => buildTree());
+  </script>
+</body>
+</html>
