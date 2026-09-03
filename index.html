@@ -442,7 +442,7 @@
 
   <script>
     const APP_VERSION = "0.09 beta";
-    const DATA_SNAPSHOT = "2026-08-30";
+    const DATA_SNAPSHOT = "2026-09-03";
 
     const META = {
       "2026.14": { first: "2026-04-15", fleet: "small leftover", fsd: "none on trunk", regions: "Global", hw: "HW3 + HW4", note: "Spring Update feature trunk. FSD point releases hang off 2026.14.6.x, not this parent." },
@@ -458,7 +458,7 @@
       "2026.20.6": { first: "2026-06-29", fleet: "phasing out", fsd: "none — security only", regions: "US/GB/EU (no AU/NZ/CA in Teslascope sample)", hw: "HW3 + HW4", note: "Security point release only. Lite is on 2026.20.6.10 / .6.11 (US+CA), not on .6 itself. Having .6 does not mean you have Lite." },
       "2026.20.6.1": { first: "2026-07-02", fleet: "~8%", fsd: "none on this exact build", regions: "Global incl. AU 1.19% / NZ 0.48%", hw: "HW3 + HW4", note: "Wide production / minor fixes. Teslascope lists AU+NZ installs but no Lite/v14 payload. AU HW3 often sat here then moved to 2026.20.6.9." },
       "2026.20.6.6": { first: "2026-07-13", fleet: "~4%", fsd: "HW4 v14.3.5", regions: "North America", hw: "HW4", note: "US+CA HW4 v14.3.5. AU/NZ HW4 twin of this stack is 2026.20.10 (FSD v14.3.5 Down Under)." },
-      "2026.20.6.9": { first: "2026-07-29", fleet: "3.3%", fsd: "none — minor fixes only", regions: "Australia / New Zealand", hw: "HW3", note: "AU/NZ HW3 regional (~99% HW3). Not Lite. US+CA HW3 Lite is 2026.20.6.10 / .6.11. AU/NZ HW4 FSD v14.3.5 is 2026.20.10." },
+      "2026.20.6.9": { first: "2026-07-29", fleet: "3.3%", fsd: "none — minor fixes only", regions: "Australia / New Zealand", hw: "HW3", note: "AU/NZ HW3 regional (~99% HW3). Not Lite. Tesla AU email 28 Aug: v14 Lite in active development for AU/NZ — not shipping on this build. US+CA Lite is 2026.20.6.10/.6.11 then 2026.26.6.5." },
       "2026.20.6.10": { first: "2026-07-20", fleet: "small", fsd: "HW3 v14 Lite", regions: "United States", hw: "HW3", note: "US HW3 Lite (wide-prep). Canada/AU/NZ not in Teslascope sample. Next US+CA dual-stack is 2026.20.6.11." },
       "2026.20.6.11": { first: "2026-07-21", fleet: "~2.6%", fsd: "HW3 v14 Lite + HW4 v14.3.6", regions: "North America", hw: "HW3 + HW4", note: "US+CA dual-stack. Teslascope countries: US 92% / CA 7%. Not an AU/NZ fleet build (isolated AU reports are unconfirmed vs this sample)." },
       "2026.20.10": { first: "2026-07-28", fleet: "1.7%", fsd: "HW4 v14.3.5 Down Under", regions: "Australia / New Zealand", hw: "HW4", note: "AU/NZ HW4 FSD v14.3.5. Same driving stack as US+CA 2026.20.6.6. Not Lite; Lite is the HW3 distill." },
@@ -471,8 +471,9 @@
       "2026.26.6": { first: "2026-08-11", fleet: "<0.1%", fsd: "none", regions: "Global incl. AU 2.63%", hw: "HW3 + HW4", note: "Short-lived Summer point before 2026.26.6.1." },
       "2026.26.6.1": { first: "2026-08-14", fleet: "production Summer (HW3 ~75% of sample)", fsd: "none new — production Summer", regions: "Global incl. AU ~1% (NZ not listed)", hw: "HW3 + HW4", note: "Dominant non-FSD Summer production build. Teslascope still lists AU installs. US+CA FSD merge is 2026.26.6.5, not this number." },
       "2026.26.6.2": { first: "2026-08-22", fleet: "4.3% rolling out", fsd: "none", regions: "Mostly EU + some US/GB (small sample)", hw: "HW4 + some HW3", note: "Minor-fix wave after .6.1. Teslascope sample is Europe-heavy; AU/NZ/CA not listed." },
-      "2026.26.6.5": { first: "2026-08-26", fleet: "rolling out (~12% of Teslascope in 5 days)", fsd: "HW3 v14.1 Lite + HW4 v14.3.8", regions: "US+CA (MX tiny)", hw: "HW3 + HW4", note: "Summer + latest US+CA FSD merge. Teslascope 30 Aug: US ~93% / CA ~6% / MX ~1%. HW split ~77% HW4 / ~23% HW3. HW3 gets v14.1 Lite, not v14.3.8. AU/NZ not in this sample." },
-      "2026.27.100.1": { first: "2026-08-24", fleet: "0.6%", fsd: "FSD Supervised on HW4 (EU factory)", regions: "NL / BE / DK", hw: "HW4", note: "Factory / new-delivery EU branch, not a customer AU/US OTA target." }
+      "2026.26.6.5": { first: "2026-08-26", fleet: "rolling out (~22% of Teslascope in 5 days)", fsd: "HW3 v14.1 Lite + HW4 v14.3.8", regions: "US+CA (MX/PR tiny)", hw: "HW3 + HW4", note: "Dominant US+CA FSD+Summer merge. Teslascope 3 Sep: ~761 installs, US ~92% / CA ~7% / MX ~0.5%. HW ~70% HW4 / ~29% HW3. HW3 gets v14.1 Lite, not v14.3.8. No AU/NZ installs in sample." },
+      "2026.27.100.1": { first: "2026-08-24", fleet: "0.6%", fsd: "FSD Supervised on HW4 (EU factory)", regions: "NL / BE / DK", hw: "HW4", note: "Factory / new-delivery EU branch, not a customer AU/US OTA target." },
+      "2026.27.200": { first: "2026-09-01", fleet: "small EU factory wave", fsd: "factory / EU (not the US+CA Lite merge)", regions: "NL / BE", hw: "HW4", note: "Follow-on EU factory line after 2026.27.100.1. Teslascope hops are Netherlands/Belgium Model Y HW4. Not an AU/NZ or US customer OTA." }
     };
 
     // First-seen order among tracked sample (not official Tesla rollout order)
@@ -504,7 +505,8 @@
       "2026.26.6.1": ["US","CA","GB","AU"],
       "2026.26.6.2": ["US","GB"],
       "2026.26.6.5": ["US","CA","MX"],
-      "2026.27.100.1": ["NL","BE","DK"]
+      "2026.27.100.1": ["NL","BE","DK"],
+      "2026.27.200": ["NL","BE"]
     };
 
     let watchCountries = ["AU","NZ","US","CA","GB"];
@@ -575,7 +577,8 @@
           type: "factory",
           version: "2026.27",
           children: [
-            { name: "2026.27.100.1", type: "point", version: "2026.27.100.1" }
+            { name: "2026.27.100.1", type: "point", version: "2026.27.100.1" },
+            { name: "2026.27.200", type: "point", version: "2026.27.200" }
           ]
         }
       ]
