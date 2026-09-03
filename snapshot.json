@@ -1,7 +1,268 @@
 {
-  "snapshot": "",
-  "meta": {},
-  "seenIn": {},
-  "tree": null,
+  "snapshot": "2026-09-03",
+  "source": "teslascope",
+  "generatedAt": "2026-09-03T11:08:51.808Z",
+  "meta": {
+    "2026.26.6.5": {
+      "first": "",
+      "fleet": "",
+      "fsd": "FSD V14.1/V14.3.8) Tesla Software Update - Teslascope",
+      "regions": "US/CA/MX/PR",
+      "hw": "HW3 + HW4",
+      "note": "Auto from Teslascope 2026-09-03. Observed sample, not Tesla official."
+    },
+    "2026.27.200": {
+      "first": "",
+      "fleet": "",
+      "fsd": "—",
+      "regions": "NL/BE/DK",
+      "hw": "HW3 + HW4",
+      "note": "Auto from Teslascope 2026-09-03. Observed sample, not Tesla official."
+    },
+    "2026.27.100.1": {
+      "first": "",
+      "fleet": "",
+      "fsd": "—",
+      "regions": "NL/BE/DK",
+      "hw": "HW3 + HW4",
+      "note": "Auto from Teslascope 2026-09-03. Observed sample, not Tesla official."
+    },
+    "2026.26.6.2": {
+      "first": "",
+      "fleet": "",
+      "fsd": "—",
+      "regions": "US/GB/DE",
+      "hw": "HW3 + HW4",
+      "note": "Auto from Teslascope 2026-09-03. Observed sample, not Tesla official."
+    },
+    "2026.26.6.1": {
+      "first": "",
+      "fleet": "",
+      "fsd": "—",
+      "regions": "US/CA/MX/AU/GB/DE/NL/BE/DK",
+      "hw": "HW3 + HW4",
+      "note": "Auto from Teslascope 2026-09-03. Observed sample, not Tesla official."
+    },
+    "2026.26.6": {
+      "first": "",
+      "fleet": "",
+      "fsd": "—",
+      "regions": "US/CA/AU/GB/DE/NL",
+      "hw": "HW3 + HW4",
+      "note": "Auto from Teslascope 2026-09-03. Observed sample, not Tesla official."
+    },
+    "2026.21.5": {
+      "first": "",
+      "fleet": "",
+      "fsd": "FSD V14.3.7) Tesla Software Update - Teslascope",
+      "regions": "US",
+      "hw": "HW3 + HW4",
+      "note": "Auto from Teslascope 2026-09-03. Observed sample, not Tesla official."
+    },
+    "2026.21.6": {
+      "first": "",
+      "fleet": "",
+      "fsd": "FSD V14.1 Lite/V14.3.7) Tesla Software Update - Teslascope",
+      "regions": "US/CA/MX/PR",
+      "hw": "HW3 + HW4",
+      "note": "Auto from Teslascope 2026-09-03. Observed sample, not Tesla official."
+    },
+    "2026.20.6.11": {
+      "first": "",
+      "fleet": "",
+      "fsd": "FSD V14 Lite/V14.3.6) Tesla Software Update - Teslascope",
+      "regions": "US/CA/MX/PR",
+      "hw": "HW3 + HW4",
+      "note": "Auto from Teslascope 2026-09-03. Observed sample, not Tesla official."
+    },
+    "2026.20.6.6": {
+      "first": "",
+      "fleet": "",
+      "fsd": "FSD V14.3.5) Tesla Software Update - Teslascope",
+      "regions": "US/CA/MX/PR",
+      "hw": "HW3 + HW4",
+      "note": "Auto from Teslascope 2026-09-03. Observed sample, not Tesla official."
+    }
+  },
+  "seenIn": {
+    "2026.26.6.5": [
+      "US",
+      "CA",
+      "MX",
+      "PR"
+    ],
+    "2026.27.200": [
+      "NL",
+      "BE",
+      "DK"
+    ],
+    "2026.27.100.1": [
+      "NL",
+      "BE",
+      "DK"
+    ],
+    "2026.26.6.2": [
+      "US",
+      "GB",
+      "DE"
+    ],
+    "2026.26.6.1": [
+      "US",
+      "CA",
+      "MX",
+      "AU",
+      "GB",
+      "DE",
+      "NL",
+      "BE",
+      "DK"
+    ],
+    "2026.26.6": [
+      "US",
+      "CA",
+      "AU",
+      "GB",
+      "DE",
+      "NL"
+    ],
+    "2026.21.5": [
+      "US"
+    ],
+    "2026.21.6": [
+      "US",
+      "CA",
+      "MX",
+      "PR"
+    ],
+    "2026.20.6.11": [
+      "US",
+      "CA",
+      "MX",
+      "PR"
+    ],
+    "2026.20.6.6": [
+      "US",
+      "CA",
+      "MX",
+      "PR"
+    ]
+  },
+  "tree": {
+    "name": "Tesla 2026",
+    "type": "root",
+    "version": "2026",
+    "children": [
+      {
+        "name": "2026.14",
+        "type": "feature",
+        "version": "2026.14",
+        "children": [
+          {
+            "name": "2026.14.6.10",
+            "type": "point",
+            "version": "2026.14.6.10"
+          },
+          {
+            "name": "2026.14.6.11",
+            "type": "point",
+            "version": "2026.14.6.11"
+          },
+          {
+            "name": "2026.14.6.12",
+            "type": "point",
+            "version": "2026.14.6.12"
+          },
+          {
+            "name": "2026.14.6.6",
+            "type": "point",
+            "version": "2026.14.6.6"
+          }
+        ]
+      },
+      {
+        "name": "2026.20",
+        "type": "feature",
+        "version": "2026.20",
+        "children": [
+          {
+            "name": "2026.20.6.11",
+            "type": "point",
+            "version": "2026.20.6.11"
+          },
+          {
+            "name": "2026.20.6.6",
+            "type": "point",
+            "version": "2026.20.6.6"
+          },
+          {
+            "name": "2026.20.10",
+            "type": "point",
+            "version": "2026.20.10"
+          }
+        ]
+      },
+      {
+        "name": "2026.21",
+        "type": "fsd",
+        "version": "2026.21",
+        "children": [
+          {
+            "name": "2026.21.5",
+            "type": "point",
+            "version": "2026.21.5"
+          },
+          {
+            "name": "2026.21.6",
+            "type": "point",
+            "version": "2026.21.6"
+          }
+        ]
+      },
+      {
+        "name": "2026.26",
+        "type": "feature",
+        "version": "2026.26",
+        "children": [
+          {
+            "name": "2026.26.6.5",
+            "type": "point",
+            "version": "2026.26.6.5"
+          },
+          {
+            "name": "2026.26.6.2",
+            "type": "point",
+            "version": "2026.26.6.2"
+          },
+          {
+            "name": "2026.26.6.1",
+            "type": "point",
+            "version": "2026.26.6.1"
+          },
+          {
+            "name": "2026.26.6",
+            "type": "point",
+            "version": "2026.26.6"
+          }
+        ]
+      },
+      {
+        "name": "2026.27",
+        "type": "factory",
+        "version": "2026.27",
+        "children": [
+          {
+            "name": "2026.27.200",
+            "type": "point",
+            "version": "2026.27.200"
+          },
+          {
+            "name": "2026.27.100.1",
+            "type": "point",
+            "version": "2026.27.100.1"
+          }
+        ]
+      }
+    ]
+  },
   "nextMap": {}
 }
